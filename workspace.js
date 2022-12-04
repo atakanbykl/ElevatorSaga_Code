@@ -5,9 +5,9 @@
 
         //------elevator funcs-------
         for (let i = 0; i < elevators.length; i++) {
-            elevators[i].on("idle", function () {
-                elevators[i].goToFloor(midFloor);
-            });
+            // elevators[i].on("idle", function () {
+            //     elevators[i].goToFloor(midFloor);
+            // });
 
             elevators[i].on("floor_button_pressed", function (floorNum) {
                 elevators[i].goToFloor(floorNum);
@@ -25,6 +25,7 @@
 
 
             elevators[i].on("passing_floor", function (floorNum, direction) {
+                // que manipulation-----------------
                 let que = elevators[i].destinationQueue;
                 if (direction == "down") { // going down
                     let queSearchIndex = 1;
@@ -41,7 +42,6 @@
                         }
                     }
                 } else if (direction == "up") { // going up
-                    console.log("debug");
                     let queSearchIndex = 1;
                     while (queSearchIndex < que.length) {
                         if (que[queSearchIndex] != floorNum) queSearchIndex++;
@@ -56,34 +56,70 @@
                         }
                     }
                 }
+                //-------------------
             });
         }
-
 
         // ---------floor funcs-------
         for (let i = 0; i < floors.length; i++) {
             floors[i].on("up_button_pressed", function () {
-                elevators[elevatorCallIndex % elevators.length].goToFloor(i);
-                elevatorCallIndex++;
-                console.log("up button pressed! elevator " + elevatorCallIndex % elevators.length + " goint to " + i);
+                let breakFlag = false;
+                for (let j = 0; j < elevators.length; j++) {
+                    if (elevators[j].loadFactor() < 0.1) {
+                        elevators[j].goToFloor(i);
+                        break;
+                    }
+                }
+                if (!breakFlag) {
+                    for (let j = 0; j < elevators.length; j++) {
+                        if (elevators[j].loadFactor < 0.8) {
+                            if (elevators[j].currentFloor() < i) {
+                                elevators[j].goToFloor(i);
+                                breakFlag = true;
+                                break;
+                            } else if (i == 0) {
+                                elevators[j].goToFloor(i);
+                                breakFlag = true;
+                                break;
+                            }
+                        }
+                        if (j == elevators.length - 1) elevators[j].goToFloor(i); //if none of above cases applied, send last elevator
+                    }
+                }
             });
             floors[i].on("down_button_pressed", function () {
-                elevators[elevatorCallIndex % elevators.length].goToFloor(i);
-                elevatorCallIndex++;
-                console.log("down button pressed! elevator " + elevatorCallIndex % elevators.length + " goint to " + i);
+                let breakFlag = false;
+                for (let j = 0; j < elevators.length; j++) {
+                    if (elevators[j].loadFactor() < 0.1) {
+                        elevators[j].goToFloor(i);
+                        breakFlag = true;
+                        break;
+                    }
+                }
+                if (!breakFlag) {
+                    for (let j = 0; j < elevators.length; j++) {
+                        if (elevators[j].loadFactor < 0.8) {
+                            if (elevators[j].currentFloor() > i) {
+                                elevators[j].goToFloor(i);
+                                break;
+                            } else if (i == floors.length - 1) {
+                                elevators[j].goToFloor(i);
+                                break;
+                            }
+                        }
+                        if (j == elevators.length - 1) elevators[j].goToFloor(i); //if none of above cases applied, send last elevator
+                    }
+                }
             });
         }
     },
     update: function (dt, elevators, floors) {
-        function uniqueArray(value, index, self) {
-            return self.indexOf(value) === index;
-        }
-
         for (let i = 0; i < elevators.length; i++) {
-
             // make the que unique------------
-            elevators[i].destinationQueue = elevators[i].destinationQueue.filter(uniqueArray);
-            elevators[i].checkDestinationQueue();
+            // elevators[i].destinationQueue = elevators[i].destinationQueue.filter(function (value, index, self) {
+            //     return self.indexOf(value) === index;
+            // });
+            // elevators[i].checkDestinationQueue();
             // -------------------------------
 
             // indicator manuplation----------
